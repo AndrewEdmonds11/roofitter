@@ -1,0 +1,25 @@
+///////////////////////////////////
+// An example analysis fcl file which fits
+// the momentum spectrum for CeM, DIO and cosmic ray components.
+// It includes efficiency and response functions
+
+#include "Main/fcl/obs_momresp.fcl"
+#include "Main/fcl/comp_cem.fcl"
+#include "Main/fcl/comp_dio.fcl"
+#include "Main/fcl/comp_crv.fcl"
+
+#include "Main/fcl/cuts_cd3.fcl"
+
+BEGIN_PROLOG
+crv_momresp : {
+    name : "crv_momresp"
+    observables : [ @local::momresp ]
+    components : [ @local::crvFlat ]
+    cuts : @local::CRVCuts
+    model : {
+	name: "model"
+	formula : "SUM::model(NCrv[0,100]*crvFlatmomresp)"
+    }
+}
+
+END_PROLOG

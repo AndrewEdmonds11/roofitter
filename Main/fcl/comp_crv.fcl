@@ -26,7 +26,16 @@ crvFlat : {
 			name : "crvFlatt0"
 			formula : "Polynomial::crvFlatt0(t0)"
 		    }
-		}
+		},
+		{
+		    obsName : "momresp"
+		    pdf : {
+		    	name : "crvFlatmomresp"
+			formula : "RooDSCB::crvFlatmomresp(momresp, dscb_mean[-1, -0.1], dscb_sigma[0.1, 0.5], dscb_ANeg[0.8, 0.0, 1.0], dscb_PNeg[3.5, 1, 100], dscb_APos[1.1, 0.0, 5.0], dscb_PPos[6.0, 1, 100])"
+		    }
+		    incEffModel : false
+		    incRespModel : false
+		}		    
 		]
 }
 

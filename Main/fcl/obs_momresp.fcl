@@ -16,13 +16,13 @@ momresp : {
 
    min : -10
    max : 10
-   bin_width : 0.25
+   binWidth : 0.25
 
    fitMin : -4
    fitMax : 0.5
 
-   efficiencyModel : @nil
-   responseModel : @nil
+#   efficiencyModel : @nil
+#   responseModel : @nil
 }
 
 END_PROLOG
