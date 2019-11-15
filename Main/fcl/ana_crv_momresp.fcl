@@ -18,7 +18,18 @@ crv_momresp : {
     cuts : @local::CRVCuts
     model : {
 	name: "model"
-	formula : "SUM::model(NCrv[0,100]*crvFlatmomresp)"
+	formula : "SUM::model(NCrv[0,500]*crvFlatmomresp)"
+    }
+}
+
+crv_momrespFixed : {
+    name : "crv_momrespFixed"
+    observables : [ @local::momresp ]
+    components : [ @local::crvFixed ]
+    cuts : @local::CRVCuts
+    model : {
+	name: "model"
+	formula : "SUM::model(NCrv[0,500]*crvFixedmomresp)"
     }
 }
 

@@ -5,6 +5,7 @@
 BEGIN_PROLOG
 
 // Flat (momentum and t0)
+// DSCB (momresp)
 crvFlat : {
     name : "crvFlat"
     fullPdfs : [
@@ -32,6 +33,21 @@ crvFlat : {
 		    pdf : {
 		    	name : "crvFlatmomresp"
 			formula : "RooDSCB::crvFlatmomresp(momresp, dscb_mean[-1, -0.1], dscb_sigma[0.1, 0.5], dscb_ANeg[0.8, 0.0, 1.0], dscb_PNeg[3.5, 1, 100], dscb_APos[1.1, 0.0, 5.0], dscb_PPos[6.0, 1, 100])"
+		    }
+		    incEffModel : false
+		    incRespModel : false
+		}		    
+		]
+}
+
+crvFixed : {
+    name : "crvFixed"
+    fullPdfs : [
+		{
+		    obsName : "momresp"
+		    pdf : {
+		    	name : "crvFixedmomresp"
+			formula : "RooDSCB::crvFixedmomresp(momresp, dscb_mean[-5.79828e-01], dscb_sigma[2.67104e-01], dscb_ANeg[4.21956e-01], dscb_PNeg[2.51002e+01], dscb_APos[2.22666e+00], dscb_PPos[5.95360e+00])"
 		    }
 		    incEffModel : false
 		    incRespModel : false
