@@ -60,9 +60,10 @@ namespace roofitter {
     RooFitResult* _fitResult;
 
   public:
-    Analysis(const AnalysisConfig& cfg) : 
+    Analysis(const AnalysisConfig& cfg, RooWorkspace* ws) : 
       _anaConf(cfg),
-      _ws(new RooWorkspace(_anaConf.name().c_str(), true))
+      _ws(ws)
+      //      _ws(new RooWorkspace(_anaConf.name().c_str(), true))
     {
       std::cout << _anaConf.name() << std::endl;
 
@@ -141,18 +142,45 @@ namespace roofitter {
 
       tree->Draw(draw.c_str(), cutcmd(), "goff");
 
-      _ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*_hist))));
+      std::string dataname = "data_" + _anaConf.name();
+      _ws->import(*(new RooDataHist(dataname.c_str(), dataname.c_str(), vars, RooFit::Import(*_hist))));
     }
 
 
     void fit() {
-      RooAbsData* data = _ws->data("data");
+      std::string dataname = "data_" + _anaConf.name();
+      RooAbsData* data = _ws->data(dataname.c_str());
       RooAbsPdf* model = _ws->pdf(_anaConf.model().name().c_str());
       if (!model) {
 	throw cet::exception("Analysis::fit()") << "Can't find model \"" << _anaConf.model().name() << "\" in RooWorkspace";
       }
-      _fitResult = model->fitTo(*data, RooFit::Save(), RooFit::Range("fit"), RooFit::Extended(true));
+
+      // For external constraints, just make the parameters in the passed PDFs constant
+      // This works for the momresp from cosmic rays fit and cemDio_mom example
+      // TODO:Actually use RooFit::ExternalConstraints
+      RooArgSet extConstraints;
+      for (const auto& i_extConstraint : _anaConf.model().externalConstraints()) {
+	std::string i_extConstraintModel = "model_" + i_extConstraint;
+	std::string i_extConstraintData = "data_" + i_extConstraint;
+	auto i_pdf = _ws->pdf(i_extConstraintModel.c_str());
+	auto i_data = _ws->data(i_extConstraintData.c_str());
+
+	auto params = i_pdf->getParameters(*i_data);
+	auto params_iter = params->createIterator();
+	RooRealVar* i_param = NULL;
+	while ( (i_param = (RooRealVar*) params_iter->Next()) ) {
+	  //	  i_param->Print("v");
+	  i_param->setConstant(true);
+	  //	  i_param->Print("v");
+	}
+	//	params->Print("v");
+
+	extConstraints.add(*i_pdf);
+      }
+      _fitResult = model->fitTo(*data, RooFit::Save(), RooFit::Range("fit"), RooFit::Extended(true));//, RooFit::ExternalConstraints(extConstraints));
+
       _fitResult->printValue(std::cout);
+      _fitResult->Print("v");
 
       int status = _fitResult->status();
       if (status>0) {
@@ -160,6 +188,7 @@ namespace roofitter {
 	  throw cet::exception("Analysis::fitTo()") << "Fit failed! If you want roofitter to continue and not throw this exception then set allow_failure to true in your fcl file";
 	}
       }
+      
     }
 
     void unfold() {
@@ -215,8 +244,8 @@ namespace roofitter {
       
       _fitResult->Write();
 
-      _ws->Print();
-      _ws->Write();
+      //      _ws->Print();
+      //      _ws->Write();
     }
 
     const AnalysisConfig& getConf() const { return _anaConf; }

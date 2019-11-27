@@ -24,6 +24,7 @@ namespace roofitter {
   struct PdfConfig {
     fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Name of this PDF")};
     fhicl::Atom<std::string> formula{fhicl::Name("formula"), fhicl::Comment("PDF function in RooFit factory format")};
+    fhicl::Sequence<std::string> externalConstraints{fhicl::Name("externalConstraints"), fhicl::Comment("PDF names for external PDFs whose parameters you want to use to constrain this fit"), std::vector<std::string>()};
   };
 
 }

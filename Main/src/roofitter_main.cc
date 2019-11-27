@@ -185,11 +185,17 @@ namespace roofitter {
 
     std::vector<AnalysisConfig> analysis_cfgs = config().analyses();
     std::vector<Analysis> analyses;
+    RooWorkspace* ws = new RooWorkspace("ws", true);
     for (auto& i_ana_cfg : analysis_cfgs) {
-      Analysis i_ana(i_ana_cfg);
+      std::cout << "roofitter: Creating Analysis..." << std::endl;
+      Analysis i_ana(i_ana_cfg, ws);
+      std::cout << "roofitter: Filling data..." << std::endl;
       i_ana.fillData(tree);
+      std::cout << "roofitter: Fitting data..." << std::endl;
       i_ana.fit();
+      std::cout << "roofitter: Unfolding data..." << std::endl;
       i_ana.unfold();
+      std::cout << "roofitter: Calculating..." << std::endl;
       i_ana.calculate();
       analyses.push_back(i_ana);
     }
@@ -202,6 +208,8 @@ namespace roofitter {
       throw cet::exception("roofitter::main()") << "No outfilename specified";
     }
     TFile* outfile = new TFile(outfilename.c_str(), "RECREATE");
+    ws->Print();
+    ws->Write();
     for (auto& i_ana : analyses) {
       TDirectory* outdir = outfile->mkdir(i_ana.getConf().name().c_str());
       outdir->cd();

@@ -16,11 +16,21 @@ erf_tq08 : {
 }
 
 // Response models
+dscb_fit : {
+    name : "dscb_fit"
+    pdf : {
+	name : "dscb_fit"
+	formula : "RooDSCB::dscb_fit(mom, dscb_mean, dscb_sigma, dscb_ANeg, dscb_PNeg, dscb_APos, dscb_PPos)"
+    }
+    validMin : -3
+    validMax : 4
+}
+
 dscb_tq08 : {
     name : "dscb_tq08"
     pdf : {
 	name : "dscb_tq08"
-	formula : "RooDSCB::dscb_tq08(mom, dscb_mean[-5.79828e-01], dscb_sigma[2.67104e-01], dscb_ANeg[4.21956e-01], dscb_PNeg[2.51002e+01], dscb_APos[2.22666e+00], dscb_PPos[5.95360e+00])"
+	formula : "RooDSCB::dscb_tq08(mom, dscb_tq08_mean[-5.79828e-01], dscb_tq08_sigma[2.67104e-01], dscb_tq08_ANeg[4.21956e-01], dscb_tq08_PNeg[2.51002e+01], dscb_tq08_APos[2.22666e+00], dscb_tq08_PPos[5.95360e+00])"
     }
     validMin : -3
     validMax : 4

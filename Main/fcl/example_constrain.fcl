@@ -12,8 +12,10 @@
 
 
 // Can do more than one analysis in a single run
-analyses : [ @local::crv_momresp ]
-#, @local::cemDio_mom ]
+analyses : [ @local::crv_momresp, @local::cemDio_mom ]
+
+analyses[1].observables[0].responseModel : @local::dscb_fit
+analyses[1].model.externalConstraints : ["crv_momresp"]
 
 // Can define input and output files here or with command line arguments
 input : {

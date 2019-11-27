@@ -2,17 +2,18 @@ void plot_cemDio_mom(std::string filename) {
 
   TFile* file = new TFile(filename.c_str(), "READ");
   
-  RooWorkspace* ws = (RooWorkspace*) file->Get("cemDio_mom/cemDio_mom");
+  RooWorkspace* ws = (RooWorkspace*) file->Get("ws");
+  //  RooWorkspace* ws = (RooWorkspace*) file->Get("cemDio_mom/cemDio_mom");
 
   ws->Print();
 
   RooRealVar* mom = ws->var("mom");
   RooPlot* plot = mom->frame(RooFit::Range("fit"));
   
-  RooAbsData* data = ws->data("data");
+  RooAbsData* data = ws->data("data_cemDio_mom");
   data->plotOn(plot);
   
-  RooAbsPdf* pdf = ws->pdf("model");
+  RooAbsPdf* pdf = ws->pdf("model_cemDio_mom");
   pdf->plotOn(plot);
   RooHist* mom_pull = plot->pullHist();
   pdf->plotOn(plot, RooFit::Components("cemLLmomEffResp"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
