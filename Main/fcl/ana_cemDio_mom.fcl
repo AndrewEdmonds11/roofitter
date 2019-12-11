@@ -1,24 +1,14 @@
 ///////////////////////////////////
-// An example analysis fcl file which fits
-// the momentum spectrum for CeM and DIO components.
+// An example analysis fcl file for a single-fit analysis of
+// the momentum spectrum with CeM and DIO components.
 // It includes efficiency and response functions
 
-#include "Main/fcl/obs_mom.fcl"
-#include "Main/fcl/comp_cem.fcl"
-#include "Main/fcl/comp_dio.fcl"
-
-#include "Main/fcl/cuts_cd3.fcl"
+#include "Main/fcl/fit_cemDio_mom.fcl"
 
 BEGIN_PROLOG
-cemDio_mom : {
-    name : "cemDio_mom"
-    observables : [ @local::mom ]
-    components : [ @local::cemLL, @local::dioPol58 ]
-    cuts : @local::AllCD3Cuts
-    model : {
-	name: "model_cemDio_mom"
-	formula : "SUM::model_cemDio_mom(NCe[0, 200]*cemLLmomEffResp, NDio[0,20000]*dioPol58momEffResp)"
-    }
+ana_cemDio_mom : {
+    name : "ana_cemDio_mom"
+    fits : [ @local::fit_cemDio_mom ]
 }
 
 END_PROLOG
