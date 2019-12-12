@@ -3,34 +3,17 @@
 // the momentum spectrum for CeM, DIO and cosmic ray components.
 // It includes efficiency and response functions
 
-#include "Main/fcl/obs_momresp.fcl"
-#include "Main/fcl/comp_cem.fcl"
-#include "Main/fcl/comp_dio.fcl"
-#include "Main/fcl/comp_crv.fcl"
-
-#include "Main/fcl/cuts_cd3.fcl"
+#include "Main/fcl/fit_crv_momresp.fcl"
 
 BEGIN_PROLOG
-crv_momresp : {
-    name : "crv_momresp"
-    observables : [ @local::momresp ]
-    components : [ @local::crvFlat ]
-    cuts : @local::CRVCuts
-    model : {
-	name: "model_crv_momresp"
-	formula : "SUM::model_crv_momresp(NCrv[0,200]*crvFlatmomresp)"
-    }
+ana_crv_momresp : {
+    name : "ana_crv_momresp"
+    fits : [ @local::fit_crv_momresp ]
 }
 
-crv_momrespFixed : {
-    name : "crv_momrespFixed"
-    observables : [ @local::momresp ]
-    components : [ @local::crvFixed ]
-    cuts : @local::CRVCuts
-    model : {
-	name: "model_crv_momresp"
-	formula : "SUM::model_crv_momresp(NCrv[0,200]*crvFixedmomresp)"
-    }
+ana_crv_momrespFixed : {
+    name : "ana_crv_momrespFixed"
+    fits : [ @local::fit_crv_momrespFixed ]
 }
 
 END_PROLOG

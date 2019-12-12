@@ -11,12 +11,15 @@ void plot_cemDio_mom(std::string filename) {
   
   RooAbsData* data = ws->data("data_fit_cemDio_mom");
   data->plotOn(plot);
+
+  Int_t cem_colour = kRed;
+  Int_t dio_colour = kBlue;
   
   RooAbsPdf* pdf = ws->pdf("model_cemDio_mom");
   pdf->plotOn(plot);
   RooHist* mom_pull = plot->pullHist();
-  pdf->plotOn(plot, RooFit::Components("cemLLmomEffResp"), RooFit::LineColor(kRed), RooFit::LineStyle(kDashed));
-  pdf->plotOn(plot, RooFit::Components("dioPol58momEffResp"), RooFit::LineColor(kBlue), RooFit::LineStyle(kDashed));
+  pdf->plotOn(plot, RooFit::Components("cemLLmomEffResp"), RooFit::LineColor(cem_colour), RooFit::LineStyle(kDashed));
+  pdf->plotOn(plot, RooFit::Components("dioPol58momEffResp"), RooFit::LineColor(dio_colour), RooFit::LineStyle(kDashed));
 
   RooRealVar* NCe = ws->var("NCe");
   RooRealVar* NDio = ws->var("NDio");
@@ -43,14 +46,14 @@ void plot_cemDio_mom(std::string filename) {
   text.str("");
   text << std::fixed << std::setprecision(1);
   text << "N Ce = " << NCe->getVal() << " #pm " << NCe->getError();
-  latex->SetTextColor(kRed);
+  latex->SetTextColor(cem_colour);
   latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
   current_ndc_y += step_ndc_y;
   
   text.str("");
   text << std::fixed << std::setprecision(1);
   text << "N Dio = " << NDio->getVal() << " #pm " << NDio->getError();
-  latex->SetTextColor(kBlue);
+  latex->SetTextColor(dio_colour);
   latex->DrawLatexNDC(ndc_x, current_ndc_y, text.str().c_str());
   current_ndc_y += step_ndc_y;
 

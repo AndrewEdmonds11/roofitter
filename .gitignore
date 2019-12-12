@@ -8,3 +8,6 @@ bin
 *.rootmap
 *.so
 tmp/
+*.d
+*#
+.#*

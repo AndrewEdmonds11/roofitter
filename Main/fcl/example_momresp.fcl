@@ -11,7 +11,7 @@
 
 
 // Can do more than one analysis in a single run
-analyses : [ @local::crv_momresp, @local::crv_momrespFixed ]
+analyses : [ @local::ana_crv_momresp, @local::ana_crv_momrespFixed ]
 
 // Can define input and output files here or with command line arguments
 input : {

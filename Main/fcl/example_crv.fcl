@@ -11,7 +11,7 @@
 
 
 // Can do more than one analysis in a single run
-analyses : [ @local::cemDioCrv_mom ]
+analyses : [ @local::ana_cemDioCrv_mom ]
 
 // Can define input and output files here or with command line arguments
 input : {

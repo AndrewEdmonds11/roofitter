@@ -1,0 +1,34 @@
+///////////////////////////////////
+// An example fit fcl file for momresp fits
+
+#include "Main/fcl/obs_momresp.fcl"
+#include "Main/fcl/comp_cem.fcl"
+#include "Main/fcl/comp_dio.fcl"
+#include "Main/fcl/comp_crv.fcl"
+
+#include "Main/fcl/cuts_cd3.fcl"
+
+BEGIN_PROLOG
+fit_crv_momresp : {
+    name : "fit_crv_momresp"
+    observables : [ @local::momresp ]
+    components : [ @local::crvFlat ]
+    cuts : @local::CRVCuts
+    model : {
+	name: "model_crv_momresp"
+	formula : "SUM::model_crv_momresp(NCrv[0,200]*crvFlatmomresp)"
+    }
+}
+
+fit_crv_momrespFixed : {
+    name : "fit_crv_momrespFixed"
+    observables : [ @local::momresp ]
+    components : [ @local::crvFixed ]
+    cuts : @local::CRVCuts
+    model : {
+	name: "model_crv_momrespFixed"
+	formula : "SUM::model_crv_momrespFixed(NCrv[0,200]*crvFixedmomresp)"
+    }
+}
+
+END_PROLOG
