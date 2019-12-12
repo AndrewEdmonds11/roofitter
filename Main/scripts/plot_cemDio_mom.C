@@ -1,8 +1,9 @@
-void plot_cemDio_mom(std::string filename) {
+void plot_cemDio_mom(std::string filename, std::string analysis_name) {
 
   TFile* file = new TFile(filename.c_str(), "READ");
   
-  RooWorkspace* ws = (RooWorkspace*) file->Get("ana_cemDio_mom/ana_cemDio_mom");
+  std::string wsname = analysis_name + "/" + analysis_name;
+  RooWorkspace* ws = (RooWorkspace*) file->Get(wsname.c_str());
 
   ws->Print();
 

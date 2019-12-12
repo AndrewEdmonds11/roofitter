@@ -7,18 +7,11 @@
 #include "Main/fcl/cuts_cd3_trkana.fcl"
 
 /// This is the analysis we want to include
-#include "Main/fcl/ana_cemDio_mom.fcl"
+#include "Main/fcl/ana_cemDio_mom_unfold.fcl"
 
 
 // Can do more than one analysis in a single run
-analyses : [ @local::ana_cemDio_mom ]
-
-analyses[0].fits[0].unfold : true
-analyses[0].calculations : [ "f_cap[0.609]", "f_dio_above_95[3.9e-11]", 
-    			     "EXPR::NDioTotal('NDioEff / (f_dio_above_95*(1-dioPol58FracSmeared))', NDioEff, f_dio_above_95, dioPol58FracSmeared)", 
-		     	     "EXPR::NCap('(f_cap/(1-f_cap))*NDioTotal', f_cap, NDioTotal)", 
-		     	     "EXPR::Rmue('NCeEff / NCap', NCeEff, NCap)" 
-		   	   ] 
+analyses : [ @local::ana_cemDio_mom_unfold ]
 
 
 // Can define input and output files here or with command line arguments

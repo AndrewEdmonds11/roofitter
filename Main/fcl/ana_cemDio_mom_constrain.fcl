@@ -1,0 +1,21 @@
+///////////////////////////////////
+// An example analysis fcl file for a two-fit analysis
+//
+// 1. fit the momentum response to the cosmic rays
+// 2. fit the momentum spectrum with CeM and DIO components.
+//
+// This also includes efficiency and response functions
+
+#include "Main/fcl/fit_crv_momresp.fcl"
+#include "Main/fcl/fit_cemDio_mom.fcl"
+
+BEGIN_PROLOG
+ana_cemDio_mom_constrain : {
+    name : "ana_cemDio_mom_constrain"
+    fits : [ @local::fit_crv_momresp, @local::fit_cemDio_mom ]
+}
+
+ana_cemDio_mom_constrain.fits[1].observables[0].responseModel : @local::dscb_fit
+ana_cemDio_mom_constrain.fits[1].model.externalConstraints : ["crv_momresp"]
+
+END_PROLOG

@@ -7,15 +7,11 @@
 #include "Main/fcl/cuts_cd3_trkana.fcl"
 
 /// This is the analysis we want to include
-#include "Main/fcl/ana_crv_momresp.fcl"
-#include "Main/fcl/ana_cemDio_mom.fcl"
+#include "Main/fcl/ana_cemDio_mom_constrain.fcl"
 
 
 // Can do more than one analysis in a single run
-analyses : [ @local::crv_momresp, @local::cemDio_mom ]
-
-analyses[1].observables[0].responseModel : @local::dscb_fit
-analyses[1].model.externalConstraints : ["crv_momresp"]
+analyses : [ @local::ana_cemDio_mom_constrain ]
 
 // Can define input and output files here or with command line arguments
 input : {

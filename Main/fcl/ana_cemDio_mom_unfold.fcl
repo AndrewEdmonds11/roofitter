@@ -1,0 +1,22 @@
+///////////////////////////////////
+// An example analysis fcl file for a single-fit analysis of
+// the momentum spectrum with CeM and DIO components.
+// It includes efficiency and response functions
+
+#include "Main/fcl/fit_cemDio_mom.fcl"
+
+BEGIN_PROLOG
+ana_cemDio_mom_unfold : {
+    name : "ana_cemDio_mom_unfold"
+    fits : [ @local::fit_cemDio_mom ]
+    calculations : [ "f_cap[0.609]", "f_dio_above_95[3.9e-11]", 
+	         "EXPR::NDioTotal('NDioEff / (f_dio_above_95*(1-dioPol58FracSmeared))', NDioEff, f_dio_above_95, dioPol58FracSmeared)", 
+		 "EXPR::NCap('(f_cap/(1-f_cap))*NDioTotal', f_cap, NDioTotal)", 
+		 "EXPR::Rmue('NCeEff / NCap', NCeEff, NCap)" 
+		] 
+}
+
+ana_cemDio_mom_unfold.fits[0].unfold : true
+
+
+END_PROLOG

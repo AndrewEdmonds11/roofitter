@@ -119,7 +119,7 @@ namespace roofitter {
       RooAbsData* data = ws->data(dataname.c_str());
       RooAbsPdf* model = ws->pdf(_fitConf.model().name().c_str());
       if (!model) {
-	throw cet::exception("Fit::fit()") << "Can't find model \"" << _fitConf.model().name() << "\" in RooWorkspace";
+	throw cet::exception("Fit::fit()") << "Can't find model \"" << _fitConf.model().name() << "\" in RooWorkspace" << std::endl;
       }
 
       // For external constraints, just make the parameters in the passed PDFs constant
@@ -128,9 +128,15 @@ namespace roofitter {
       RooArgSet extConstraints;
       for (const auto& i_extConstraint : _fitConf.model().externalConstraints()) {
 	std::string i_extConstraintModel = "model_" + i_extConstraint;
-	std::string i_extConstraintData = "data_" + i_extConstraint;
+	std::string i_extConstraintData = "data_fit_" + i_extConstraint;
 	auto i_pdf = ws->pdf(i_extConstraintModel.c_str());
+	if (!i_pdf) {
+	  throw cet::exception("Fit::fit()") << "Can' find external constraint model \"" << i_extConstraintModel << "\" in RooWorkspace" << std::endl;
+	}
 	auto i_data = ws->data(i_extConstraintData.c_str());
+	if (!i_data) {
+	  throw cet::exception("Fit::fit()") << "Can' find external constraint data \"" << i_extConstraintData << "\" in RooWorkspace" << std::endl;
+	}
 
 	auto params = i_pdf->getParameters(*i_data);
 	auto params_iter = params->createIterator();
