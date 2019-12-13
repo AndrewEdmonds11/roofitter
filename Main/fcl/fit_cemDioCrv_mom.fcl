@@ -16,6 +16,7 @@ fit_cemDioCrv_mom : {
     observables : [ @local::mom ]
     components : [ @local::cemLL, @local::dioPol58, @local::crvFlat ]
     cuts : @local::CD3CutsNoCRV
+    dataname : "data_cemDioCrv_mom"
     model : {
 	name: "model_cemDioCrv_mom"
 	formula : "SUM::model_cemDioCrv_mom(NCe[0, 200]*cemLLmomEffResp, NDio[0,20000]*dioPol58momEffResp, , NCrv[0,20000]*crvFlatmomEffResp)"

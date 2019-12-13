@@ -1,25 +1,41 @@
-void plot_cemDio_mom_unfold(std::string filename) {
+#include "PlotSettings.hh"
+
+void plot_cemDio_mom_unfold(std::string filename, const PlotSettings& plot) {
 
   TFile* file = new TFile(filename.c_str(), "READ");
   
-  RooWorkspace* ws = (RooWorkspace*) file->Get("ana_cemDio_mom/ana_cemDio_mom");
-
+  std::string wsname = plot.ana_name + "/" + plot.ana_name;
+  RooWorkspace* ws = (RooWorkspace*) file->Get(wsname.c_str());
+  if (!ws) {
+    std::cout << "ERROR: No workspace named \"" << wsname << "\" in file" << std::endl;
+    return;
+  }
   ws->Print();
 
   RooRealVar* mom = ws->var("mom");
-  RooPlot* plot = mom->frame(RooFit::Range("fit"));
+  RooPlot* rooplot = mom->frame(RooFit::Range("fit"));
   
-  RooAbsData* data = ws->data("data_fit_cemDio_mom");
-  data->plotOn(plot);
+  std::string dataname = plot.data_name;
+  RooAbsData* data = ws->data(dataname.c_str());
+  if (!data) {
+    std::cout << "ERROR: No data named \"" << dataname << "\" in workspace" << std::endl;
+    return;
+  }
+  data->plotOn(rooplot);
 
   Int_t cem_colour = kRed;
   Int_t dio_colour = kBlue;
-  
-  RooAbsPdf* pdf = ws->pdf("model_cemDio_mom");
-  pdf->plotOn(plot);
-  RooHist* mom_pull = plot->pullHist();
-  pdf->plotOn(plot, RooFit::Components("cemLLmomEffResp"), RooFit::LineColor(cem_colour), RooFit::LineStyle(kDashed));
-  pdf->plotOn(plot, RooFit::Components("dioPol58momEffResp"), RooFit::LineColor(dio_colour), RooFit::LineStyle(kDashed));
+
+  std::string modelname = plot.model_name;
+  RooAbsPdf* model = ws->pdf(modelname.c_str());
+  if (!model) {
+    std::cout << "ERROR: No model named \"" << modelname << "\" in workspace" << std::endl;
+    return;
+  }
+  model->plotOn(rooplot);
+  RooHist* mom_pull = rooplot->pullHist();
+  model->plotOn(rooplot, RooFit::Components("cemLLmomEffResp"), RooFit::LineColor(cem_colour), RooFit::LineStyle(kDashed));
+  model->plotOn(rooplot, RooFit::Components("dioPol58momEffResp"), RooFit::LineColor(dio_colour), RooFit::LineStyle(kDashed));
 
   RooRealVar* NCe = ws->var("NCe");
   RooRealVar* NDio = ws->var("NDio");
@@ -42,7 +58,7 @@ void plot_cemDio_mom_unfold(std::string filename) {
   
   pad1->SetLogy();
   pad1->cd();
-  plot->Draw();
+  rooplot->Draw();
   TLatex* latex = new TLatex();
   latex->SetTextAlign(22);
   latex->SetTextSize(0.06);

@@ -18,6 +18,7 @@ namespace roofitter {
     fhicl::Sequence< fhicl::Table<ObservableConfig> > observables{fhicl::Name("observables"), fhicl::Comment("List of observables")};
     fhicl::Sequence< fhicl::Table<ComponentConfig> > components{fhicl::Name("components"), fhicl::Comment("List of components")};
     fhicl::Sequence< fhicl::Table<CutConfig> > cuts{fhicl::Name("cuts"), fhicl::Comment("List of cuts to apply")};
+    fhicl::Atom<std::string> dataname{fhicl::Name("dataname"), fhicl::Comment("Data name")};
     fhicl::Table<PdfConfig> model{fhicl::Name("model"), fhicl::Comment("The PDF for the full final model to fit")};
     fhicl::Atom<bool> unfold{fhicl::Name("unfold"), fhicl::Comment("Set to tru if you want to unfold the efficiency and response effects"), false};
   };
@@ -110,12 +111,12 @@ namespace roofitter {
 
       tree->Draw(draw.c_str(), cutcmd(), "goff");
 
-      std::string dataname = "data_" + _fitConf.name();
+      std::string dataname = _fitConf.dataname();
       ws->import(*(new RooDataHist(dataname.c_str(), dataname.c_str(), vars, RooFit::Import(*_hist))));
     }
 
     int fit(RooWorkspace* ws) {
-      std::string dataname = "data_" + _fitConf.name();
+      std::string dataname = _fitConf.dataname();
       RooAbsData* data = ws->data(dataname.c_str());
       RooAbsPdf* model = ws->pdf(_fitConf.model().name().c_str());
       if (!model) {
@@ -128,7 +129,7 @@ namespace roofitter {
       RooArgSet extConstraints;
       for (const auto& i_extConstraint : _fitConf.model().externalConstraints()) {
 	std::string i_extConstraintModel = "model_" + i_extConstraint;
-	std::string i_extConstraintData = "data_fit_" + i_extConstraint;
+	std::string i_extConstraintData = "data_" + i_extConstraint;
 	auto i_pdf = ws->pdf(i_extConstraintModel.c_str());
 	if (!i_pdf) {
 	  throw cet::exception("Fit::fit()") << "Can' find external constraint model \"" << i_extConstraintModel << "\" in RooWorkspace" << std::endl;

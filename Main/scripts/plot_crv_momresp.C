@@ -1,11 +1,6 @@
-void plot_crv_momresp(std::string filename) {
+#include "PlotSettings.hh"
 
-  const int n_analyses = 2;
-  std::string names[n_analyses] = {"crv_momresp", "crv_momrespFixed"};
-  Int_t colours[n_analyses] = {kRed, kBlue};
-  int n_fit_params[n_analyses] = {7, 1};
-  std::string leglabels[n_analyses] = {"floated", "fixed"};
-  int precision[n_analyses] = {2, 1};
+void plot_crv_momresp(std::string filename, const std::vector<PlotSettings>& plots) {
 
   TLegend* legend = new TLegend(0.55, 0.85, 0.85, 0.75, "");
   legend->SetBorderSize(0);
@@ -19,13 +14,16 @@ void plot_crv_momresp(std::string filename) {
   TCanvas* c = new TCanvas();
   //    c->SetLogy();
 
-  for (int i_analysis = 0; i_analysis < n_analyses; ++i_analysis) {
-    std::string name = names[i_analysis];
-    std::string analysis_name = "ana_" + name;
-    std::string fit_name = "fit_" + name;
+  for (const auto& i_plot : plots) {
+    std::string analysis_name = i_plot.ana_name;
+    std::string fit_name = i_plot.fit_name;
     
     std::string wsname = analysis_name + "/" + analysis_name;
     RooWorkspace* ws = (RooWorkspace*) file->Get(wsname.c_str());
+    if (!ws) {
+      std::cout << "ERROR: No workspace named \"" << wsname << "\" in file" << std::endl;
+      return;
+    }
     ws->Print();
 
     RooRealVar* momresp = ws->var("momresp");
@@ -35,27 +33,35 @@ void plot_crv_momresp(std::string filename) {
     plot->GetXaxis()->SetTitle("#frac{1}{2} (p_{down} - p_{up}) [MeV/c]");
     plot->GetYaxis()->SetTitle("Count / 0.25 MeV/c");
       
-    std::string dataname = "data_" + fit_name;
+    std::string dataname = i_plot.data_name;
     RooAbsData* data = ws->data(dataname.c_str());
+    if (!data) {
+      std::cout << "ERROR: No data named \"" << dataname << "\" in workspace" << std::endl;
+      return;
+    }
     data->plotOn(plot);
 
-      std::string modelname = "model_" + name;
-      RooAbsPdf* model = ws->pdf(modelname.c_str());
-      model->plotOn(plot, RooFit::LineColor(colours[i_analysis]));
+    std::string modelname = i_plot.model_name;
+    RooAbsPdf* model = ws->pdf(modelname.c_str());
+    if (!model) {
+      std::cout << "ERROR: No model named \"" << modelname << "\" in workspace" << std::endl;
+      return;
+    }
+    model->plotOn(plot, RooFit::LineColor(i_plot.colour));
       
-      std::cout << "chi^2 / ndf = " << plot->chiSquare(n_fit_params[i_analysis]) << std::endl;
-
-      plot->Draw("SAME");
-
-      TH1F* hist = new TH1F("hist", "", 1,0,1);
-      hist->SetLineColor(colours[i_analysis]);
-      hist->SetLineWidth(2);
-
-      leglabel.str("");
-      leglabel << leglabels[i_analysis];
-
-      std::cout << leglabel.str() << std::endl;
-      legend->AddEntry(hist, leglabel.str().c_str(), "l");
+    std::cout << "chi^2 / ndf = " << plot->chiSquare(i_plot.n_fit_params) << std::endl;
+    
+    plot->Draw("SAME");
+    
+    TH1F* hist = new TH1F("hist", "", 1,0,1);
+    hist->SetLineColor(i_plot.colour);
+    hist->SetLineWidth(2);
+    
+    leglabel.str("");
+    leglabel << i_plot.leglabel;
+    
+    std::cout << leglabel.str() << std::endl;
+    legend->AddEntry(hist, leglabel.str().c_str(), "l");
   }
 
   legend->Draw();
