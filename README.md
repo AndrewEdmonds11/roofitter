@@ -1,6 +1,8 @@
 # roofitter
 This program runs RooFit on a TTree. The user can define cuts, observables and pdfs for their analysis with a fhicl file.
 
+Branch created to add in 2D fits
+
 ## Clone the Repository
 To download a version:
 > git clone https://github.com/AndrewEdmonds11/roofitter.git
