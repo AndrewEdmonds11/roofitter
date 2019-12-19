@@ -4,9 +4,12 @@
 #include "TFile.h"
 #include "TH1.h"
 #include "TF1.h"
+#include "TLeaf.h"
+#include "TTreeFormula.h"
 
 #include "RooWorkspace.h"
 #include "RooDataHist.h"
+#include "RooDataSet.h"
 #include "RooPlot.h"
 #include "RooAddPdf.h"
 #include "RooFFTConvPdf.h"
@@ -23,6 +26,8 @@
 #include "Main/inc/Observable.hh"
 #include "Main/inc/Component.hh"
 
+#include <string>
+
 namespace roofitter {
 
   typedef std::string PdfName;
@@ -38,6 +43,8 @@ namespace roofitter {
 
   struct AnalysisConfig {
     fhicl::Atom<std::string> name{fhicl::Name("name"), fhicl::Comment("Analysis name")};
+    fhicl::Atom<std::string> fit_type{fhicl::Name("fit_type"), fhicl::Comment("Choose between binned and unbinned fit")};
+    fhicl::Atom<std::string> flat_tree_filename{fhicl::Name("flat_tree_filename"), fhicl::Comment("Name of the ROOT file containing the flat tree data")};
     fhicl::Sequence< fhicl::Table<ObservableConfig> > observables{fhicl::Name("observables"), fhicl::Comment("List of observables")};
     fhicl::Sequence< fhicl::Table<ComponentConfig> > components{fhicl::Name("components"), fhicl::Comment("List of components")};
     fhicl::Sequence< fhicl::Table<CutConfig> > cuts{fhicl::Name("cuts"), fhicl::Comment("List of cuts to apply")};
@@ -101,52 +108,162 @@ namespace roofitter {
       return result;
     }
 
+    TTree* flattenTree(TTree* tree)
+    {
+        std::string branchleaf;
+        Float_t var;
+        TLeaf *leaf;
+        TFile *file_flat = new TFile(_anaConf.flat_tree_filename().c_str(), "RECREATE");
+        TTree *tree_flat = new TTree("trkana_flat", "flatten trkana tree");
+
+        auto& obs_conf = _observables[0].getConf();
+        branchleaf = obs_conf.leaf();
+        std::string branch_name, leaf_name;
+        // Replace the "." by a "/" in the string to create the leaf later; also extract the name of the branch and the name of the leaf
+        for (unsigned int c = 0; c < branchleaf.length(); ++c)
+        {
+            if (branchleaf[c] == '.')
+            {
+                branchleaf[c] = '/';
+                branch_name = branchleaf.substr(0, c);
+                leaf_name = branchleaf.substr(c+1, branchleaf.length());
+            }
+        }
+
+        tree_flat->Branch(leaf_name.c_str(), &var, (leaf_name+"/F").c_str());
+        leaf = tree->GetLeaf(branchleaf.c_str());
+
+        // Formula for the cut to apply on the tree
+        TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
+
+        Int_t n_entries = (Int_t) tree->GetEntries();
+        for (Int_t i = 0; i < n_entries; i++)
+        {
+            tree->GetEntry(i);
+            if (cut_formula->EvalInstance() == 1)
+            {
+                var = leaf->GetValue();
+                tree_flat->Fill();
+            }
+        }
+
+/*
+        std::vector<std::string> branchleaf;
+        std::vector<Float_t> vars(_observables.size());
+        std::vector<TLeaf *> leaves;
+        TFile *file = new TFile("trkana_flat.root", "RECREATE");
+        TTree *tree_flat = new TTree("trkana_flat", "flatten trkana tree");
+
+        for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
+        {
+            auto& obs_conf = _observables[i_obs].getConf();
+            branchleaf.push_back(obs_conf.leaf());
+            std::string branch_name, leaf_name;
+            // Replace the "." by a "/" in the string to create the leaf later; also extract the name of the branch and the name of the leaf
+            for (unsigned int c = 0; c < branchleaf[i_obs].length(); ++c)
+            {
+                if (branchleaf[i_obs][c] == '.')
+                {
+                    branchleaf[i_obs][c] = '/';
+                    branch_name = branchleaf[i_obs].substr(0, c);
+                    leaf_name = branchleaf[i_obs].substr(c+1, branchleaf[i_obs].length());
+                }
+            }
+
+            tree_flat->Branch((branch_name+leaf_name).c_str(), &vars[i_obs], (branch_name+leaf_name+"/F").c_str());
+            leaves.push_back(tree->GetLeaf(branchleaf[i_obs].c_str()));
+        }
+
+        // Formula for the cut to apply on the tree
+        TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
+
+        std::cout << "size vars: " << vars.size() << std::endl;
+        Int_t n_entries = (Int_t) tree->GetEntries();
+        for (Int_t i = 0; i < n_entries; i++)
+        {
+            for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
+            {
+                tree->GetEntry(i);
+                if (cut_formula->EvalInstance() == 1)
+                {
+                    std::cout << "index: " << i_obs << std::endl;
+                    vars[i_obs] = leaves[i_obs]->GetValue();
+                    tree_flat->Fill();
+                }
+            }
+        }
+*/
+        tree_flat->Write();
+        file_flat->Write();
+
+        return tree_flat;
+    }
+
     void fillData(TTree* tree) {
 
-      RooArgSet vars;
-      RooRealVar* x_var = 0;
-      RooRealVar* y_var = 0;
-      std::string x_leaf = "";
-      std::string y_leaf = "";
-      for (const auto& i_obs : _observables) {
-	const auto& i_obs_conf = i_obs.getConf();
-	RooRealVar* var = _ws->var(i_obs_conf.name().c_str());
-	vars.add(*var);
+    RooArgSet vars;
+    RooRealVar* x_var = 0;
+    RooRealVar* y_var = 0;
+    std::string x_leaf = "";
+    std::string y_leaf = "";
+    for (const auto& i_obs : _observables) {
+        const auto& i_obs_conf = i_obs.getConf();
+	    RooRealVar* var = _ws->var(i_obs_conf.name().c_str());
+	    vars.add(*var);
 
-	if (x_leaf.empty()) {
-	  x_leaf = i_obs_conf.leaf();
-	  x_var = var;
-	}
-	else if (y_leaf.empty()) {
-	  y_leaf = i_obs_conf.leaf();
-	  y_var = var;
-	}
-      }
-
-      std::string histname = "h_" + _anaConf.name();
-      std::string draw = "";
-      if (vars.getSize()==1) {
-	_hist = x_var->createHistogram(histname.c_str());
-	draw = x_leaf;
-      }
-      else if (vars.getSize()==2) {
-	_hist = x_var->createHistogram(histname.c_str(), RooFit::YVar(*y_var));
-	draw = y_leaf+":"+x_leaf;
-      }
-      else {
-	throw cet::exception("Analysis::fillData()") << "Can't create histogram with more than two axes";
-      }
-      draw += ">>";
-      draw += _hist->GetName();
-
-      tree->Draw(draw.c_str(), cutcmd(), "goff");
-
-      _ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*_hist))));
+	    if (x_leaf.empty()) {
+	        x_leaf = i_obs_conf.leaf();
+	        x_var = var;
+	    }
+	    else if (y_leaf.empty()) {
+	        y_leaf = i_obs_conf.leaf();
+	    y_var = var;
+	    }
     }
+
+    if (_anaConf.fit_type() == "binned")
+    {
+        std::string histname = "h_" + _anaConf.name();
+        std::string draw = "";
+        if (vars.getSize()==1) {
+	        _hist = x_var->createHistogram(histname.c_str());
+	        draw = x_leaf;
+        }
+        else if (vars.getSize()==2) {
+	        _hist = x_var->createHistogram(histname.c_str(), RooFit::YVar(*y_var));
+	        draw = y_leaf+":"+x_leaf;
+        }
+        else {
+            throw cet::exception("Analysis::fillData()") << "Can't create histogram with more than two axes";
+        }
+        draw += ">>";
+        draw += _hist->GetName();
+
+        tree->Draw(draw.c_str(), cutcmd(), "goff");
+
+        _ws->import(*(new RooDataHist("data", "data", vars, RooFit::Import(*_hist))));
+    }
+    else if (_anaConf.fit_type() == "unbinned")
+    {
+        TFile *file_flat = new TFile(_anaConf.flat_tree_filename().c_str());
+        TTree *flat_tree = (TTree*) file_flat->Get("trkana_flat");
+        RooRealVar *mom = new RooRealVar("mom", "mom", 95, 115);
+
+        RooDataSet data("data", "unbinned dataset", flat_tree, *mom);
+        _ws->import(data);
+    }
+    else
+    {
+        throw cet::exception("Analysis::fillData()") << "incorrect fit_type. Only \"binned\" and \"unbinned\" are currently supported";
+    }
+}
 
 
     void fit() {
-      RooAbsData* data = _ws->data("data");
+
+      RooAbsData *data;
+      data = _ws->data("data");
+
       RooAbsPdf* model = _ws->pdf(_anaConf.model().name().c_str());
       if (!model) {
 	throw cet::exception("Analysis::fit()") << "Can't find model \"" << _anaConf.model().name() << "\" in RooWorkspace";
@@ -211,7 +328,10 @@ namespace roofitter {
     }
 
     void Write() {
-      _hist->Write();
+      if (_anaConf.fit_type() == "binned")
+      {
+        _hist->Write();
+      }
       
       _fitResult->Write();
 
