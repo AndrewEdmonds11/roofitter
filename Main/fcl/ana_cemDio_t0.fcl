@@ -1,0 +1,22 @@
+///////////////////////////////////
+// placeholder for 1D fits
+
+#include "Main/fcl/obs_mom.fcl"
+#include "Main/fcl/comp_cem.fcl"
+#include "Main/fcl/comp_dio.fcl"
+
+#include "Main/fcl/cuts_cd3.fcl"
+
+BEGIN_PROLOG
+cemDio_t0 : {
+    name : "cemDio_t0"
+    observables : [ @local::t0]
+    components : [ @local::cemLL, @local::dioPol58 ]//TODO
+    cuts : @local::AllCD3Cuts
+    model : {
+	name: "model"
+	formula : "SUM::model(NCe[0, 200]*cemLLmomEffRespt0, NDio[0,20000]*dioPol58momEffRespt0)"
+    }
+}
+
+END_PROLOG
