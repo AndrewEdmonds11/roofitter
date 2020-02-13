@@ -6,6 +6,9 @@
 #include "TF1.h"
 #include "TLeaf.h"
 #include "TTreeFormula.h"
+#include "TTreeReader.h"
+#include "TTreeReaderValue.h"
+#include "TTreeReaderArray.h"
 
 #include "RooWorkspace.h"
 #include "RooDataHist.h"
@@ -48,8 +51,9 @@ namespace roofitter {
     fhicl::Sequence< fhicl::Table<ObservableConfig> > observables{fhicl::Name("observables"), fhicl::Comment("List of observables")};
     fhicl::Sequence< fhicl::Table<ComponentConfig> > components{fhicl::Name("components"), fhicl::Comment("List of components")};
     fhicl::Sequence< fhicl::Table<CutConfig> > cuts{fhicl::Name("cuts"), fhicl::Comment("List of cuts to apply")};
+    fhicl::Atom<bool> CRV_cut{fhicl::Name("CRV_cut"), fhicl::Comment("Set to true to apply the CRV cut"), false};
     fhicl::Table<PdfConfig> model{fhicl::Name("model"), fhicl::Comment("The PDF for the full final model to fit")};
-    fhicl::Atom<bool> unfold{fhicl::Name("unfold"), fhicl::Comment("Set to tru if you want to unfold the efficiency and response effects"), false};
+    fhicl::Atom<bool> unfold{fhicl::Name("unfold"), fhicl::Comment("Set to true if you want to unfold the efficiency and response effects"), false};
     fhicl::Atom<bool> allow_failure{fhicl::Name("allow_failure"), fhicl::Comment("If set to true, then roofitter will not throw an exception for a failed fit."), false};
     fhicl::Sequence<std::string> calculations{fhicl::Name("calculations"), fhicl::Comment("A list of supplemental calculations that you want to calculate"), std::vector<std::string>()};
   };
@@ -110,89 +114,74 @@ namespace roofitter {
 
     TTree* flattenTree(TTree* tree)
     {
-        std::string branchleaf;
-        Float_t var;
-        TLeaf *leaf;
+        std::vector<std::string> branchleaf_flat, branchleaf;
+        std::vector<Float_t> vars(_observables.size());
+        std::vector<TLeaf *> leaves;
         TFile *file_flat = new TFile(_anaConf.flat_tree_filename().c_str(), "RECREATE");
         TTree *tree_flat = new TTree("trkana_flat", "flatten trkana tree");
 
-        auto& obs_conf = _observables[0].getConf();
-        branchleaf = obs_conf.leaf();
-        std::string branch_name, leaf_name;
-        // Replace the "." by a "/" in the string to create the leaf later; also extract the name of the branch and the name of the leaf
-        for (unsigned int c = 0; c < branchleaf.length(); ++c)
-        {
-            if (branchleaf[c] == '.')
-            {
-                branchleaf[c] = '/';
-                branch_name = branchleaf.substr(0, c);
-                leaf_name = branchleaf.substr(c+1, branchleaf.length());
-            }
-        }
-
-        tree_flat->Branch(leaf_name.c_str(), &var, (leaf_name+"/F").c_str());
-        leaf = tree->GetLeaf(branchleaf.c_str());
-
-        // Formula for the cut to apply on the tree
-        TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
-
-        Int_t n_entries = (Int_t) tree->GetEntries();
-        for (Int_t i = 0; i < n_entries; i++)
-        {
-            tree->GetEntry(i);
-            if (cut_formula->EvalInstance() == 1)
-            {
-                var = leaf->GetValue();
-                tree_flat->Fill();
-            }
-        }
-
-/*
-        std::vector<std::string> branchleaf;
-        std::vector<Float_t> vars(_observables.size());
-        std::vector<TLeaf *> leaves;
-        TFile *file = new TFile("trkana_flat.root", "RECREATE");
-        TTree *tree_flat = new TTree("trkana_flat", "flatten trkana tree");
-
+        std::cout << "# observables: " << _observables.size() << std::endl;
         for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
         {
             auto& obs_conf = _observables[i_obs].getConf();
             branchleaf.push_back(obs_conf.leaf());
+            branchleaf_flat.push_back(obs_conf.leaf());
             std::string branch_name, leaf_name;
             // Replace the "." by a "/" in the string to create the leaf later; also extract the name of the branch and the name of the leaf
-            for (unsigned int c = 0; c < branchleaf[i_obs].length(); ++c)
+            for (unsigned int c = 0; c < branchleaf_flat[i_obs].length(); ++c)
             {
-                if (branchleaf[i_obs][c] == '.')
+                if (branchleaf_flat[i_obs][c] == '.')
                 {
-                    branchleaf[i_obs][c] = '/';
-                    branch_name = branchleaf[i_obs].substr(0, c);
-                    leaf_name = branchleaf[i_obs].substr(c+1, branchleaf[i_obs].length());
+                    branchleaf_flat[i_obs][c] = '/';
+                    branch_name = branchleaf_flat[i_obs].substr(0, c);
+                    leaf_name = branchleaf_flat[i_obs].substr(c+1, branchleaf[i_obs].length());
                 }
             }
 
-            tree_flat->Branch((branch_name+leaf_name).c_str(), &vars[i_obs], (branch_name+leaf_name+"/F").c_str());
-            leaves.push_back(tree->GetLeaf(branchleaf[i_obs].c_str()));
+            std::cout << "Leaf name: " << leaf_name << std::endl;
+            tree_flat->Branch(leaf_name.c_str(), &vars[i_obs]);
+            leaves.push_back(tree->GetLeaf(branchleaf_flat[i_obs].c_str()));
         }
 
         // Formula for the cut to apply on the tree
         TTreeFormula *cut_formula = new TTreeFormula("cut", cutcmd(), tree);
 
-        std::cout << "size vars: " << vars.size() << std::endl;
-        Int_t n_entries = (Int_t) tree->GetEntries();
-        for (Int_t i = 0; i < n_entries; i++)
+        TTreeReader fReader(tree);
+        std::vector<TTreeReaderValue<Float_t>> obs_reader;
+        TTreeReaderValue<Float_t> det0 = {fReader, "de.t0"};
+        TTreeReaderValue<Int_t> bestcrv = {fReader, "bestcrv"};
+        TTreeReaderArray<Float_t> timeWindowStart = {fReader, "crvinfo._timeWindowStart"};
+
+        for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
         {
-            for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
+            obs_reader.push_back(TTreeReaderValue<Float_t>{fReader, branchleaf[i_obs].c_str()});
+        }
+
+        while (fReader.Next())
+        {
+            if (cut_formula->EvalInstance() == 1)
             {
-                tree->GetEntry(i);
-                if (cut_formula->EvalInstance() == 1)
+                if (_anaConf.CRV_cut())
                 {
-                    std::cout << "index: " << i_obs << std::endl;
-                    vars[i_obs] = leaves[i_obs]->GetValue();
+                    if ( *bestcrv < 0 || *det0 - timeWindowStart[*bestcrv] < -50 || *det0 - timeWindowStart[*bestcrv] > 150 )
+                    {
+                        for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
+                        {
+                            vars[i_obs] = *obs_reader[i_obs];
+                        }
+                        tree_flat->Fill();
+                    }
+                }
+                else
+                {
+                    for (unsigned int i_obs = 0; i_obs < _observables.size(); ++i_obs)
+                    {
+                        vars[i_obs] = *obs_reader[i_obs];
+                    }
                     tree_flat->Fill();
                 }
             }
         }
-*/
         tree_flat->Write();
         file_flat->Write();
 
@@ -247,9 +236,8 @@ namespace roofitter {
     {
         TFile *file_flat = new TFile(_anaConf.flat_tree_filename().c_str());
         TTree *flat_tree = (TTree*) file_flat->Get("trkana_flat");
-        RooRealVar *mom = new RooRealVar("mom", "mom", 95, 115);
 
-        RooDataSet data("data", "unbinned dataset", flat_tree, *mom);
+        RooDataSet data("data", "unbinned dataset", flat_tree, vars);
         _ws->import(data);
     }
     else

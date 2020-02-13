@@ -1,26 +1,26 @@
 ///////////////////////////////////
 // An example analysis fcl file which fits
-// the momentum spectrum for CeM and DIO components.
+// the time spectrum for CeM and DIO components.
 // It includes efficiency and response functions
 
-#include "Main/fcl/obs_mom.fcl"
+#include "Main/fcl/obs_t0.fcl"
 #include "Main/fcl/comp_cem.fcl"
 #include "Main/fcl/comp_dio.fcl"
 
 #include "Main/fcl/cuts_cd3.fcl"
 
 BEGIN_PROLOG
-cemDio_mom : {
-    name : "cemDio_mom"
+cemDio_t0 : {
+    name : "cemDio_t0"
     fit_type : "unbinned"
     flat_tree_filename : "trkana_flat.root"
-    observables : [ @local::mom ]
+    observables : [ @local::t0 ]
     components : [ @local::cemLL, @local::dioPol58 ]
     cuts : @local::CD3CutsNoCRV
     CRV_cut : true
     model : {
 	name: "model"
-	formula : "SUM::model(NCe[0, 200]*cemLLmomEffResp, NDio[0,20000]*dioPol58momEffResp)"
+	formula : "SUM::model(0*cemLLt0, NDio[0,20000]*dioPol58t0)"
     }
 }
 
